@@ -16,7 +16,7 @@ class tetris:
         
         line=["[][][][]","""[]\n[]\n[]\n[]"""]
         self.base=[]
-        for x in range(11):
+        for x in range(20):
             self.base.append((-1,x))
         self.center=[22,11]
         self.figure=[]
@@ -62,8 +62,8 @@ class tetris:
             
         if key==keyboard.Key.left:
             temp-=2
-           
-        self.center[1]=self.compareBoundaries(temp,True)
+        if self.controlColision(temp): 
+            self.center[1]=self.compareBoundaries(temp,True)
         
     def compareBoundaries(self,temp,flag):
         if flag:
@@ -86,10 +86,53 @@ class tetris:
             v2=centX-int(lx/2)<0
             return not( v2 or v1)
             
-            
-            
+    def controlColision(self,temp):
+        figureDimension=[len(self.figure[self.figureN][self.figPos]),len(self.figure[self.figureN][self.figPos][0])]
+        halfD=[figureDimension[0]/2,figureDimension[1]/2]
+        initx=int(self.center[0]-halfD[0])
+        inity=int(temp-halfD[1])
+        valBool=True
+        fg=self.figure[self.figureN][self.figPos]
+        for x in range(figureDimension[0]):
+            for y in range(figureDimension[1]):
+                if (initx+x,inity+y) in self.base and fg[x][y]!='.':
+                    valBool=False
+                    break 
+        return valBool   
         
-
+    def deleteColumn(self):
+        baseL=self.base
+        baseL.sort()
+        cont=0
+        contDelLines=0
+        va=0
+        baseA=[]
+        baseB=[]
+        baseC=[]
+        for x in baseL:
+            y,z=x
+            baseA.append((y-contDelLines,z))
+            if y !=-1 :
+                if va==y-contDelLines:
+                    cont+=1
+                    if cont==20:
+                        contDelLines+=1
+                        baseA=[]
+                else:
+                    baseB.extend(baseA)
+                    baseA=[]
+                    cont=1
+                    va=y-contDelLines
+            else:
+                baseB.extend(baseA)
+                baseA=[]
+                
+            
+        if cont!=20:
+            baseB.extend(baseA)
+            baseA=[]
+                
+        self.base=baseB
 
 
      
@@ -99,7 +142,9 @@ class tetris:
         if self.controlFail():
             center[0]-=1
         else:
+            
             self.nextFigure()
+            self.deleteColumn()
         self.drawScreen(f,center)
         
     def controlFail(self):
