@@ -1,33 +1,54 @@
 import time
 import os
-import sys
+import random
 from pynput import keyboard
 class tetris:
 #create the figures
     rows,cols=(22,10*2)
     def __init__(self):
-        self.velocity=2 # 2 sec
-        self.figureN=0
-        self.figPos=1
+        
         if os.name == "posix":
             self.var = "clear"       
         elif os.name == "ce" or os.name == "nt" or os.name == "dos":
             self.var = "cls"
         
-        line=["[][][][]","""[]\n[]\n[]\n[]"""]
+        i_block=["""[]\n[]\n[]\n[]""","[][][][]"]
+        j_block=['[]....\n[][][]','[][]\n[]..\n[]..','[][][]\n....[]','..[]\n..[]\n[][]']
+        l_block=[ '[][][]\n[]....', '[][]\n..[]\n..[]', '....[]\n[][][]','[]..\n[]..\n[][]']
+        s_block=[ '..[][]\n[][]..','[]..\n[][]\n..[]']
+        t_block=['..[]\n[][]\n..[]', '..[]..\n[][][]', '[]..\n[][]\n[]..','[][][]\n..[]..']
+        o_block=['[][]\n[][]']
+        z_block=['[][]..\n..[][]', '..[]\n[][]\n[]..']
+        
         self.base=[]
         for x in range(20):
             self.base.append((-1,x))
-        self.center=[22,11]
+        
         self.figure=[]
-        figureN=[]
-        for x in line:
-            figureN.append(self.extractFigure(x))
-        self.figure.append(figureN)
+        self.figure.append(self.extractSprite(i_block))
+        self.figure.append(self.extractSprite(j_block))
+        self.figure.append(self.extractSprite(l_block))
+        self.figure.append(self.extractSprite(s_block))
+        self.figure.append(self.extractSprite(z_block))
+        self.figure.append(self.extractSprite(t_block))
+        self.figure.append(self.extractSprite(o_block))
+        
+        
+        
+        self.listFigures=[0,1,2,3,4,5,6]
+        self.velocity=2 # 2 sec
+        self.figureN=-1
+        self.center=[22,10]
+        self.figPos=0
+        self.nextFigure()
         listener = keyboard.Listener(on_press=self.pressKey)
         listener.start()
         self.timeEjecution()
-    
+    def extractSprite(self,listss):
+        figureN=[]
+        for x in listss:
+            figureN.append(self.extractFigure(x))
+        return figureN
     def extractFigure(self,f):
         data=f.split("\n")
         listx=[]
@@ -51,10 +72,11 @@ class tetris:
             temp=temp%len(self.figure[self.figureN])
             if self.compareBoundaries(temp,False):
                 self.figPos=temp
-                if self.center[1]%2==0:
-                    self.center[1]+=1
-                else:
-                    self.center[1]-=1
+                if len(self.figure[self.figureN])!=1:
+                    if self.center[1]%2==0:
+                        self.center[1]+=1
+                    else:
+                        self.center[1]-=1
             
         temp=self.center[1]
         if key== keyboard.Key.right:
@@ -162,23 +184,31 @@ class tetris:
         return valBool
     
     def nextFigure(self):
-        figure=self.figure[self.figureN][self.figPos]
-        figureDimension=[len(figure),len(figure[0])]
-        halfD=[figureDimension[0]/2,figureDimension[1]/2]
-        initx=int(self.center[0]-halfD[0])
-        inity=int(self.center[1]-halfD[1])
-        for x in range(figureDimension[0]):
-            for y in range(figureDimension[1]):
-                fg=figure
-                if fg[x][y]!='.':
+        if self.figureN!=-1:
+            figure=self.figure[self.figureN][self.figPos]
+            figureDimension=[len(figure),len(figure[0])]
+            halfD=[figureDimension[0]/2,figureDimension[1]/2]
+            initx=int(self.center[0]-halfD[0])
+            inity=int(self.center[1]-halfD[1])
+            for x in range(figureDimension[0]):
+                for y in range(figureDimension[1]):
+                    fg=figure
+                    
                     try:
-                        self.base.append((initx+x,inity+y))
+                        if fg[x][y]!='.':
+                            self.base.append((initx+x,inity+y))
                     except:
-                        ls="no hacer nada"
-        
-        self.figPos=1
-        self.figureN=0
-        self.center=[22,11]
+                            ls="no hacer nada"
+            
+        self.figPos=0
+        if len(self.listFigures)==0:
+            self.listFigures=[0,1,2,3,4,5,6]
+            random.shuffle(self.listFigures)
+        self.figureN=self.listFigures.pop()
+        if self.figureN>4:
+            self.center=[22,10]
+        else:
+            self.center=[22,11]
     
     def drawScreen(self,figure,center):
         os.system(self.var)
@@ -195,11 +225,12 @@ class tetris:
         for x in range(figureDimension[0]):
             for y in range(figureDimension[1]):
                 fg=figure[self.figureN][self.figPos]
-                if fg[x][y]!='.':
-                    try:
+                
+                try:
+                    if fg[x][y]!='.':
                         grid[initx+x][inity+y]=fg[x][y]
-                    except:
-                        ls="no hacer nada"
+                except:
+                    ls="no hacer nada"
         for x in self.base:
             y,z=x
             if y!=-1:
